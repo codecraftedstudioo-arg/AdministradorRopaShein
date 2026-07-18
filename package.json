@@ -1,52 +1,33 @@
 {
-  "name": "administrador-ropa-shein",
+  "name": "shein-platform",
   "version": "0.1.0",
   "private": true,
+  "description": "Monorepo del ecosistema SHEIN: panel admin, app móvil y tienda online sobre una base tecnológica compartida.",
+  "packageManager": "npm@11.13.0",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "lint": "eslint",
-    "postinstall": "prisma generate",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
-  "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
-    "@prisma/client": "^6.19.0",
-    "bcryptjs": "^3.0.2",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "jose": "^6.1.0",
-    "lucide-react": "^0.552.0",
-    "next": "16.2.10",
-    "papaparse": "^5.5.4",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-hook-form": "^7.71.0",
-    "recharts": "^3.3.1",
-    "tailwind-merge": "^3.4.0",
-    "xlsx": "^0.18.5",
-    "zod": "^4.1.13"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\" --ignore-path .gitignore",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "npm run db:generate -w @shein/database",
+    "db:push": "npm run db:push -w @shein/database",
+    "db:migrate": "npm run db:migrate -w @shein/database",
+    "db:seed": "npm run db:seed -w @shein/database",
+    "db:studio": "npm run db:studio -w @shein/database"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20",
-    "@types/papaparse": "^5.3.16",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.10",
-    "prisma": "^6.19.0",
-    "tailwindcss": "^4",
-    "tsx": "^4.23.1",
-    "typescript": "^5"
+    "dotenv-cli": "^8.0.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.5.4",
+    "typescript": "^5.9.3"
   }
 }

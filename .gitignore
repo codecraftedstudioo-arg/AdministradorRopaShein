@@ -1,46 +1,41 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# Dependencias
+node_modules
+.pnp
 .pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
 
-# testing
-/coverage
+# Builds
+dist
+build
+out
+.next
+.turbo
+*.tsbuildinfo
+next-env.d.ts
 
-# next.js
-/.next/
-/out/
+# Prisma (cliente generado)
+**/generated
 
-# production
-/build
+# Entornos
+.env
+.env.*
+!.env.example
 
-# misc
+# Uploads (dev)
+apps/admin-web/public/uploads/*
+!apps/admin-web/public/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema
 .DS_Store
 *.pem
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea
 
-# env files (can opt-in for committing if needed)
-.env*
-!.env.example
-
-# uploads (dev image storage)
-/public/uploads/*
-!/public/uploads/.gitkeep
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Expo (mobile, futuro)
+apps/mobile/.expo

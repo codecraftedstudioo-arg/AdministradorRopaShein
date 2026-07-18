@@ -1,0 +1,9 @@
+{
+  "extends": "@shein/config/tsconfig/base",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "prisma/**/*.ts"],
+  "exclude": ["node_modules"]
+}

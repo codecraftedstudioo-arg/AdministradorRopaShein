@@ -1,0 +1,38 @@
+{
+  "name": "@shein/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Capa de datos compartida: cliente Prisma, schema, seed, helpers y queries.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
+    "build": "prisma generate",
+    "db:push": "dotenv -e ../../apps/admin-web/.env -- prisma db push",
+    "db:migrate": "dotenv -e ../../apps/admin-web/.env -- prisma migrate dev",
+    "db:deploy": "dotenv -e ../../apps/admin-web/.env -- prisma migrate deploy",
+    "db:seed": "dotenv -e ../../apps/admin-web/.env -- tsx prisma/seed.ts",
+    "db:studio": "dotenv -e ../../apps/admin-web/.env -- prisma studio",
+    "clean": "rm -rf node_modules/.prisma"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "@shein/auth": "*",
+    "@shein/shared": "*"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.2",
+    "dotenv-cli": "^8.0.0",
+    "prisma": "^6.19.0",
+    "tsx": "^4.20.6"
+  }
+}

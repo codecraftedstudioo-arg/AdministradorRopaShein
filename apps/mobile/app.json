@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "SHEIN Empleados",
+    "slug": "shein-empleados",
+    "scheme": "shein-empleados",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true
+  }
+}

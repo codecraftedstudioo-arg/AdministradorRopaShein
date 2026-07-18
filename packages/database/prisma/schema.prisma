@@ -1,0 +1,335 @@
+// ============================================================
+//  Plataforma SHEIN · Modelo de datos definitivo
+//
+//  Principio central: cada PRENDA es ÚNICA. No existe stock
+//  múltiple. Cada prenda es un registro independiente.
+//  Nada se elimina físicamente: se archiva (estado) o se marca
+//  como borrado lógico (deletedAt), y toda acción queda auditada.
+//
+//  Compartido por: admin-web, mobile y store-web.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Conexión de la app (pooler).
+  url       = env("DATABASE_URL")
+  // Conexión directa para migraciones (sin pgbouncer).
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------------
+//  ENUMS
+// ------------------------------------------------------------
+
+enum Genero {
+  MUJER
+  HOMBRE
+  NINO
+}
+
+enum Categoria {
+  REMERA
+  BUZO
+  CAMISA
+  PANTALON
+  CAMPERA
+  ZAPATILLA
+}
+
+enum Estado {
+  DISPONIBLE
+  RESERVADA
+  VENDIDA
+  ARCHIVADA
+}
+
+enum CanalVenta {
+  LOCAL
+  ONLINE
+  PARTICULAR
+}
+
+// ------------------------------------------------------------
+//  ROL
+//  Tabla (no enum) para permitir agregar roles en el futuro
+//  sin tocar código y sin hardcodear permisos. Los roles base
+//  (ADMIN, EMPLEADO) se crean como filas en el seed.
+// ------------------------------------------------------------
+
+model Rol {
+  id          String   @id @default(uuid()) @db.Uuid
+  // Identificador estable del rol: "ADMIN", "EMPLEADO", ...
+  clave       String   @unique
+  nombre      String
+  descripcion String?
+  // Lista de permisos del rol (no hardcodeada).
+  permisos    Json     @default("[]")
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  usuarios Usuario[]
+
+  @@index([clave])
+}
+
+// ------------------------------------------------------------
+//  USUARIO
+//  Toda acción del sistema queda relacionada a un usuario.
+// ------------------------------------------------------------
+
+model Usuario {
+  id           String    @id @default(uuid()) @db.Uuid
+  nombre       String
+  apellido     String
+  email        String    @unique
+  passwordHash String
+  rolId        String    @db.Uuid
+  activo       Boolean   @default(true)
+  ultimoLogin  DateTime?
+  // Borrado lógico (nunca se elimina un usuario con historial).
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  rol                Rol                 @relation(fields: [rolId], references: [id], onDelete: Restrict)
+  prendas            Prenda[]            @relation("PrendaUsuarioCarga")
+  ventas             Venta[]             @relation("VentaUsuario")
+  auditorias         Auditoria[]         @relation("AuditoriaUsuario")
+  tokensRecuperacion TokenRecuperacion[]
+  importaciones      Importacion[]
+
+  @@index([email])
+  @@index([rolId])
+  @@index([activo])
+}
+
+// ------------------------------------------------------------
+//  PROVEEDOR
+//  Origen de las prendas (SHEIN, otros). Extensible.
+// ------------------------------------------------------------
+
+model Proveedor {
+  id        String    @id @default(uuid()) @db.Uuid
+  nombre    String    @unique
+  activo    Boolean   @default(true)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  lotes Lote[]
+
+  @@index([nombre])
+  @@index([activo])
+}
+
+// ------------------------------------------------------------
+//  LOTE
+//  Agrupa prendas de un mismo ingreso/proveedor (ej: L001).
+//  Cantidad y costo promedio se CALCULAN desde las prendas
+//  (nunca se desincronizan).
+// ------------------------------------------------------------
+
+model Lote {
+  id            String    @id @default(uuid()) @db.Uuid
+  // Número legible único (ej: L001).
+  numero        String    @unique
+  proveedorId   String    @db.Uuid
+  fechaIngreso  DateTime  @default(now())
+  observaciones String?   @db.Text
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  proveedor Proveedor @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  prendas   Prenda[]
+
+  @@index([numero])
+  @@index([proveedorId])
+  @@index([fechaIngreso])
+}
+
+// ------------------------------------------------------------
+//  PRENDA (la unidad física única = 1 bolsa SHEIN)
+//  Stock implícito = 1. La ganancia NO se persiste:
+//  se calcula precioVenta - costo (o precioFinal - costo).
+//  codigoInterno es el SKU inmutable (formato LS-000001).
+// ------------------------------------------------------------
+
+model Prenda {
+  id             String    @id @default(uuid()) @db.Uuid
+  // SKU inmutable y único (ej: LS-000001). Nunca se modifica.
+  codigoInterno  String    @unique
+  nombre         String
+  descripcion    String?   @db.Text
+  observaciones  String?   @db.Text
+  genero         Genero
+  categoria      Categoria
+  // Detalle libre opcional (no tiene enum definido).
+  subcategoria   String?
+  talle          String
+  // Montos en unidades enteras de la moneda (sin decimales).
+  precioVenta    Int
+  costo          Int       @default(6000)
+  estado         Estado    @default(DISPONIBLE)
+  fechaIngreso   DateTime  @default(now())
+  loteId         String    @db.Uuid
+  usuarioCargaId String    @db.Uuid
+  // Borrado lógico (la prenda nunca se elimina físicamente).
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  lote         Lote     @relation(fields: [loteId], references: [id], onDelete: Restrict)
+  usuarioCarga Usuario  @relation("PrendaUsuarioCarga", fields: [usuarioCargaId], references: [id], onDelete: Restrict)
+  imagenes     Imagen[]
+  // 1:1 — una prenda puede tener a lo sumo una venta.
+  venta        Venta?
+
+  @@index([codigoInterno])
+  @@index([nombre])
+  @@index([categoria])
+  @@index([subcategoria])
+  @@index([genero])
+  @@index([talle])
+  @@index([estado])
+  @@index([fechaIngreso])
+  @@index([precioVenta])
+  @@index([loteId])
+  @@index([usuarioCargaId])
+}
+
+// ------------------------------------------------------------
+//  IMAGEN (múltiples por prenda, ordenables, con una principal)
+// ------------------------------------------------------------
+
+model Imagen {
+  id          String   @id @default(uuid()) @db.Uuid
+  prendaId    String   @db.Uuid
+  url         String
+  orden       Int      @default(0)
+  esPrincipal Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  prenda Prenda @relation(fields: [prendaId], references: [id], onDelete: Cascade)
+
+  @@index([prendaId])
+}
+
+// ------------------------------------------------------------
+//  VENTA (1:1 con la prenda vendida; nunca se elimina)
+// ------------------------------------------------------------
+
+model Venta {
+  id            String     @id @default(uuid()) @db.Uuid
+  prendaId      String     @unique @db.Uuid
+  usuarioId     String     @db.Uuid
+  canalVenta    CanalVenta
+  precioFinal   Int
+  observaciones String?    @db.Text
+  fechaVenta    DateTime   @default(now())
+  createdAt     DateTime   @default(now())
+
+  prenda  Prenda  @relation(fields: [prendaId], references: [id], onDelete: Restrict)
+  usuario Usuario @relation("VentaUsuario", fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([usuarioId])
+  @@index([canalVenta])
+  @@index([fechaVenta])
+}
+
+// ------------------------------------------------------------
+//  AUDITORÍA (registro inmutable de todas las acciones)
+//  Polimórfica: `entidad` + `entidadId` identifican el objeto
+//  afectado sin FK, para poder auditar cualquier entidad de
+//  forma uniforme y perdurable.
+// ------------------------------------------------------------
+
+model Auditoria {
+  id            String   @id @default(uuid()) @db.Uuid
+  usuarioId     String   @db.Uuid
+  // Ej: "Prenda", "Venta", "Usuario", "Configuracion".
+  entidad       String
+  entidadId     String
+  // Ej: "CREAR", "EDITAR_PRECIO", "CAMBIAR_ESTADO", "ARCHIVAR", "VENDER".
+  accion        String
+  valorAnterior Json?
+  valorNuevo    Json?
+  fecha         DateTime @default(now())
+
+  usuario Usuario @relation("AuditoriaUsuario", fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([usuarioId])
+  @@index([entidad, entidadId])
+  @@index([accion])
+  @@index([fecha])
+}
+
+// ------------------------------------------------------------
+//  RECUPERACIÓN DE CONTRASEÑA
+//  Arquitectura preparada (aún sin envío de emails). Se guarda el
+//  hash del token, con expiración y marca de uso (un solo uso).
+// ------------------------------------------------------------
+
+model TokenRecuperacion {
+  id        String    @id @default(uuid()) @db.Uuid
+  usuarioId String    @db.Uuid
+  tokenHash String    @unique
+  expiraEn  DateTime
+  usadoEn   DateTime?
+  createdAt DateTime  @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([expiraEn])
+}
+
+// ------------------------------------------------------------
+//  IMPORTACIÓN MASIVA
+//  Historial de cada importación Excel/CSV. Nunca se elimina.
+// ------------------------------------------------------------
+
+model Importacion {
+  id                 String   @id @default(uuid()) @db.Uuid
+  usuarioId          String   @db.Uuid
+  archivoNombre      String
+  formato            String
+  cantidadTotal      Int      @default(0)
+  cantidadImportada  Int      @default(0)
+  cantidadRechazada  Int      @default(0)
+  duracionMs         Int      @default(0)
+  // COMPLETADA | FALLIDA | CANCELADA
+  estado             String
+  detalle            Json?
+  createdAt          DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([usuarioId])
+  @@index([createdAt])
+  @@index([estado])
+}
+
+// ------------------------------------------------------------
+//  CONFIGURACIÓN GLOBAL (clave/valor)
+//  Costo por defecto, moneda, nombre del negocio, logo, color, ...
+//  Nada hardcodeado.
+// ------------------------------------------------------------
+
+model Configuracion {
+  id          String   @id @default(uuid()) @db.Uuid
+  clave       String   @unique
+  valor       String
+  // Sugerencia de tipo del valor: "string" | "number" | "color" | "image".
+  tipo        String?
+  descripcion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clave])
+}

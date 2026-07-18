@@ -1,0 +1,19 @@
+/**
+ * Preset de Tailwind v4 compartido (tokens del sistema de diseño).
+ *
+ * Tailwind v4 se configura vía CSS. Las apps pueden importar este preset
+ * para compartir la paleta y los radios base:
+ *
+ *   @import "tailwindcss";
+ *   @import "@shein/config/tailwind";
+ *
+ * Nota: en esta etapa `apps/admin-web` define sus tokens en su propio
+ * globals.css. Este preset queda disponible para futuras apps (store-web)
+ * y para centralizar el design system cuando se migren los componentes a
+ * `@shein/ui`.
+ */
+
+@theme {
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.25rem;
+}

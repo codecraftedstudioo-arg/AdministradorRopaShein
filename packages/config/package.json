@@ -1,0 +1,20 @@
+{
+  "name": "@shein/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Configuraciones compartidas: TypeScript, ESLint, Prettier y Tailwind.",
+  "files": [
+    "tsconfig",
+    "eslint",
+    "prettier",
+    "tailwind"
+  ],
+  "exports": {
+    "./eslint": "./eslint/base.mjs",
+    "./prettier": "./prettier/index.mjs",
+    "./tailwind": "./tailwind/preset.css",
+    "./tsconfig/base": "./tsconfig/base.json",
+    "./tsconfig/nextjs": "./tsconfig/nextjs.json",
+    "./tsconfig/react-library": "./tsconfig/react-library.json"
+  }
+}
